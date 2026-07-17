@@ -1,0 +1,107 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: #f8f9fa;
+}
+
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+h1 {
+  margin: 0 0 24px;
+  font-size: 24px;
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+section {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+input[type='text'],
+input[type='password'],
+input[type='url'],
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.key-field {
+  display: none;
+}
+
+.key-field.visible {
+  display: block;
+}
+
+button {
+  padding: 10px 24px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1557b0;
+}
+
+.status {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #188038;
+  min-height: 20px;
+}
+
+.status.error {
+  color: #d93025;
+}

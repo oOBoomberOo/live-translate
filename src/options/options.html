@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Translate Settings</title>
+  <link rel="stylesheet" href="./options.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Live Translate Settings</h1>
+
+    <section>
+      <h2>Google Cloud</h2>
+      <div class="field">
+        <label for="googleKey">API Key</label>
+        <input type="password" id="googleKey" placeholder="AIza..." />
+        <p class="hint">
+          One key for Cloud Translation and Cloud Vision. Enable both APIs in Google Cloud Console.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Image OCR</h2>
+      <div class="field">
+        <label>
+          <input type="checkbox" id="translateImages" />
+          Translate text in images (Google Vision)
+        </label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Site Blocklist</h2>
+      <div class="field">
+        <label for="blocklist">Blocked domains (one per line)</label>
+        <textarea id="blocklist" rows="4" placeholder="example.com"></textarea>
+      </div>
+    </section>
+
+    <button id="save" type="button">Save Settings</button>
+    <p id="status" class="status"></p>
+  </div>
+  <script type="module" src="./options.ts"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Translate</title>
+  <link rel="stylesheet" href="./popup.css" />
+</head>
+<body>
+  <div class="popup">
+    <header>
+      <h1>Live Translate</h1>
+      <label class="toggle">
+        <input type="checkbox" id="enabled" />
+        <span class="slider"></span>
+      </label>
+    </header>
+    <div class="field">
+      <label for="sourceLang">From</label>
+      <select id="sourceLang"></select>
+    </div>
+    <div class="field">
+      <label for="targetLang">To</label>
+      <select id="targetLang"></select>
+    </div>
+    <p id="status" class="status"></p>
+    <a href="#" id="optionsLink">Settings</a>
+  </div>
+  <script type="module" src="./popup.ts"></script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Live Translate Test Page</title>
+    <style>
+      body {
+        font-family: Georgia, serif;
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 24px;
+        line-height: 1.6;
+      }
+      .spacer {
+        height: 120vh;
+        background: linear-gradient(#f5f5f5, #e8e8e8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+      }
+      .below-fold {
+        padding: 48px 0;
+      }
+      img {
+        max-width: 100%;
+        display: block;
+        margin: 24px 0;
+        border: 1px solid #ddd;
+      }
+      .image-section {
+        margin-top: 32px;
+      }
+      .thumb-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      #thumbnail-image {
+        width: 180px;
+        height: 180px;
+        object-fit: cover;
+      }
+      #thumbnail-image.enlarged {
+        width: 360px;
+        height: 360px;
+      }
+      #thumb-url-image {
+        width: 200px;
+        height: 200px;
+      }
+      /* Clipped gallery thumb: intrinsic image is large, visible box is small */
+      .clip-thumb {
+        width: 160px;
+        height: 160px;
+        overflow: hidden;
+        margin: 24px 0;
+        border: 1px solid #ddd;
+        position: relative;
+      }
+      .clip-thumb img {
+        position: absolute;
+        width: 800px;
+        height: 800px;
+        max-width: none;
+        margin: 0;
+        border: none;
+        left: 0;
+        top: 0;
+      }
+      /* Constrained viewer (holoearth-like): image must not grow past box */
+      .viewer {
+        width: 360px;
+        max-width: 100%;
+        margin: 24px 0;
+        border: 1px solid #bbb;
+        background: #fafafa;
+      }
+      .viewer img {
+        width: 100%;
+        height: auto;
+        margin: 0;
+        border: none;
+        display: block;
+      }
+      /* Twitter/X-like aspect-ratio media: landscape timeline photo */
+      .media-frame {
+        position: relative;
+        width: 520px;
+        max-width: 100%;
+        padding-bottom: 56.25%;
+        margin: 24px 0;
+        background: #111;
+        overflow: hidden;
+      }
+      .media-frame img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        object-fit: cover;
+        border: none;
+      }
+      #vertical-image {
+        width: 240px;
+        height: 360px;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="title">Bonjour le monde</h1>
+    <p id="intro">
+      Ceci est une page de test pour la traduction en direct pendant le défilement.
+    </p>
+    <p id="visible-para">
+      Le renard brun rapide saute par-dessus le chien paresseux.
+    </p>
+
+    <section class="image-section">
+      <h2>Images (same-origin)</h2>
+      <img
+        id="same-origin-image"
+        src="/bonjour.png"
+        width="320"
+        height="320"
+        alt="Texte dans une image"
+      />
+    </section>
+
+    <section class="image-section">
+      <h2>Constrained viewer (layout must not blow up)</h2>
+      <div class="viewer" id="viewer-box">
+        <img
+          id="viewer-image"
+          src="/large-intrinsic.png"
+          alt="Grande image dans un viewer étroit"
+        />
+      </div>
+    </section>
+
+    <section class="image-section">
+      <h2>Timeline media (absolute / landscape)</h2>
+      <div class="media-frame">
+        <img
+          id="twitter-like-image"
+          src="/bonjour.png"
+          alt="Media paysage style Twitter"
+        />
+      </div>
+    </section>
+
+    <section class="image-section">
+      <h2>Images (cross-origin CDN)</h2>
+      <img
+        id="cross-origin-image"
+        src="__CROSS_ORIGIN_IMAGE__"
+        width="320"
+        height="320"
+        alt="Image cross-origin"
+      />
+    </section>
+
+    <section class="image-section">
+      <h2>English image (skip EN→EN)</h2>
+      <img
+        id="english-image"
+        src="/hello.png"
+        width="320"
+        height="320"
+        alt="English already"
+      />
+    </section>
+
+    <section class="image-section">
+      <h2>Vertical bubble</h2>
+      <img
+        id="vertical-image"
+        src="/vertical.png"
+        width="240"
+        height="360"
+        alt="Bulle verticale"
+      />
+    </section>
+
+    <section class="image-section">
+      <h2>Thumbnail (deferred OCR)</h2>
+      <div class="thumb-row">
+        <img
+          id="thumbnail-image"
+          src="/bonjour.png"
+          alt="Petite vignette"
+        />
+        <div>
+          <p id="thumb-note">Cette image est affichée en petite vignette.</p>
+          <button type="button" id="enlarge-thumb">Agrandir l'image</button>
+        </div>
+      </div>
+      <img
+        id="thumb-url-image"
+        src="__THUMB_URL_IMAGE__"
+        alt="URL vignette CDN"
+      />
+      <div class="clip-thumb" id="clip-thumb-box">
+        <img
+          id="clipped-thumb-image"
+          src="/large-intrinsic.png"
+          alt="Vignette clipée"
+        />
+      </div>
+    </section>
+
+    <div class="spacer" id="spacer">Faites défiler vers le bas</div>
+
+    <div class="below-fold">
+      <h2 id="below-title">Contenu hors écran</h2>
+      <p id="below-para">
+        Ce paragraphe n'est visible qu'après le défilement et doit être traduit à la demande.
+      </p>
+      <img
+        id="below-fold-image"
+        src="/fox.png"
+        width="320"
+        height="320"
+        alt="Image hors écran"
+      />
+    </div>
+    <script>
+      document.getElementById('enlarge-thumb')?.addEventListener('click', () => {
+        document.getElementById('thumbnail-image')?.classList.add('enlarged');
+      });
+    </script>
+  </body>
+</html>
