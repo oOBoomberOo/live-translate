@@ -1,6 +1,6 @@
 import type { OcrBox, OcrResult } from '../../shared/types';
 import type { Settings } from '../../shared/messages';
-import { groupOcrBoxes } from '../../shared/ocr-group';
+import { groupOcrBoxes, mergeVerticalBubbleColumns } from '../../shared/ocr-group';
 
 type VisionVertex = { x?: number; y?: number };
 
@@ -76,8 +76,9 @@ export async function runGoogleVisionOcr(
   let imageHeight = page?.height ?? 0;
   let boxes: OcrBox[] = [];
 
-  // Prefer Vision's paragraph-level boxes. These are already semantic regions;
-  // regrouping them can bridge separate speech bubbles that happen to align.
+  // Prefer Vision's paragraph-level boxes. Regrouping horizontal paragraphs can
+  // bridge separate speech bubbles, but vertical JP columns inside one bubble
+  // must be merged or English overlays become letter-thin strips.
   if (page?.blocks) {
     for (const block of page.blocks) {
       for (const paragraph of block.paragraphs ?? []) {
@@ -92,6 +93,7 @@ export async function runGoogleVisionOcr(
         });
       }
     }
+    boxes = mergeVerticalBubbleColumns(boxes);
   }
 
   // Fallback: first annotation is full text; remaining are words, so only this
@@ -106,7 +108,7 @@ export async function runGoogleVisionOcr(
         confidence: 90,
       });
     }
-    boxes = groupOcrBoxes(boxes);
+    boxes = mergeVerticalBubbleColumns(groupOcrBoxes(boxes));
   }
 
   // Infer page size from boxes if Vision omitted it

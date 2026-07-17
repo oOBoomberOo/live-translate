@@ -41,8 +41,16 @@ function stopTranslating(): void {
 chrome.runtime.onMessage.addListener((message: ExtensionMessage) => {
   if (message.type === 'TOGGLE_TAB') {
     enabled = message.enabled;
-    if (enabled && currentSettings) {
-      startTranslating(currentSettings);
+    if (enabled) {
+      void (async () => {
+        currentSettings = currentSettings ?? (await getSettings());
+        if (isSiteBlocked(window.location.hostname, currentSettings.siteBlocklist)) {
+          return;
+        }
+        // Restart cleanly if already running (e.g. re-toggle).
+        stopTranslating();
+        startTranslating(currentSettings);
+      })();
     } else {
       stopTranslating();
     }

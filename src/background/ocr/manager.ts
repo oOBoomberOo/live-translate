@@ -29,7 +29,7 @@ export class OcrManager {
     }
 
     const cacheKey = await hashString(
-      `${options.url}:${width}x${height}:${settings.ocrMode}:${settings.sourceLang || options.from}:v7`,
+      `${options.url}:${width}x${height}:${settings.ocrMode}:${settings.sourceLang || options.from}:v8`,
     );
     let ocrResult = await this.cache.get(cacheKey);
 

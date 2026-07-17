@@ -52,10 +52,6 @@ enabledEl.addEventListener('change', async () => {
   });
 
   statusEl.textContent = enabledEl.checked ? 'Translating this page' : 'Disabled';
-
-  if (tab.id && enabledEl.checked) {
-    await chrome.tabs.reload(tab.id);
-  }
 });
 
 sourceLangEl.addEventListener('change', () => void saveLanguageSettings());
