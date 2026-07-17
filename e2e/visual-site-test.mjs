@@ -132,8 +132,9 @@ async function collectMetrics(page) {
     const containers = [...document.querySelectorAll('.lt-overlay-container')];
     const statuses = [...document.querySelectorAll('.lt-image-status')];
 
-    const overlaySamples = overlays.slice(0, 12).map((o) => {
+    const overlaySamples = overlays.slice(0, 16).map((o) => {
       const r = o.getBoundingClientRect();
+      const textEl = o.querySelector('.lt-overlay-text') ?? o;
       const text = (o.textContent ?? '').trim().slice(0, 80);
       const parent = o.closest('.lt-overlay-container');
       const img = parent?.querySelector('img');
@@ -144,13 +145,37 @@ async function collectMetrics(page) {
           r.top < ir.top - 2 ||
           r.right > ir.right + 2 ||
           r.bottom > ir.bottom + 2);
+
+      const cs = getComputedStyle(o);
+      const fontSize = parseFloat(cs.fontSize) || 0;
+      const lineHeightPx = parseFloat(getComputedStyle(textEl).lineHeight) || fontSize * 1.05;
+      const renderedLines = lineHeightPx
+        ? Math.max(1, Math.round(textEl.scrollHeight / lineHeightPx))
+        : 1;
+      // Height a single rendered line occupies vs the overlay box: the overlay
+      // box height mirrors the original OCR text-block height, so per-line fill
+      // near/above the box's own per-line slot means glyphs ≈ original size.
+      const perLineBox = r.height / renderedLines || r.height;
+      const glyphFill = perLineBox ? +(lineHeightPx / perLineBox).toFixed(2) : 0;
+
       return {
         text,
         w: Math.round(r.width),
         h: Math.round(r.height),
         spill: Boolean(spill),
+        fontSize: Math.round(fontSize),
+        renderedLines,
+        // ~1.0 means each translated line is as tall as the original text lines.
+        glyphFill,
+        atFloor: fontSize <= 10,
       };
     });
+
+    // "Too small" = shrunk to floor while the box still has vertical slack,
+    // i.e. text ended up much smaller than the original glyphs it covers.
+    const tooSmallOverlays = overlaySamples.filter(
+      (s) => s.atFloor && s.glyphFill < 0.6 && s.h >= 28,
+    ).length;
 
     const sizeBlowups = containers
       .map((c) => {
@@ -190,6 +215,13 @@ async function collectMetrics(page) {
       statusCount: statuses.length,
       overlaySamples,
       spillCount: overlaySamples.filter((s) => s.spill).length,
+      tooSmallOverlays,
+      avgFontSize:
+        overlaySamples.length > 0
+          ? Math.round(
+              overlaySamples.reduce((a, s) => a + s.fontSize, 0) / overlaySamples.length,
+            )
+          : 0,
       sizeBlowups,
       thumbsTranslatedEarly,
       navOverlayHits,
@@ -350,6 +382,11 @@ async function testSite(context, site) {
       }
       if (m.sizeBlowups?.length) {
         result.issues.push(`${m.phase}: ${m.sizeBlowups.length} possible layout blowup(s)`);
+      }
+      if (m.tooSmallOverlays > 0) {
+        result.issues.push(
+          `${m.phase}: ${m.tooSmallOverlays} overlay(s) rendered much smaller than original glyphs`,
+        );
       }
       if (m.thumbsTranslatedEarly > 0 && site.id === 'pixiv') {
         result.issues.push(

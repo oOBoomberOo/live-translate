@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "icons": "node scripts/generate-icons.mjs",
     "test:e2e": "npm run build && node e2e/generate-fixtures.mjs && node e2e/run-extension-test.mjs",
-    "test:visual": "npm run build && node e2e/visual-site-test.mjs"
+    "test:visual": "npm run build && node e2e/visual-site-test.mjs",
+    "test:visual:font": "npm run build && node e2e/visual-font-size-test.mjs"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.28",

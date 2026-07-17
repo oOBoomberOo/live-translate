@@ -113,10 +113,15 @@ export function getElementText(el: Element): string | null {
   return texts.length > 0 ? texts.join(' ') : null;
 }
 
+const STYLE_VERSION = '2';
+
 export function injectStyles(): void {
-  if (document.getElementById('lt-styles')) return;
+  const existing = document.getElementById('lt-styles');
+  if (existing?.dataset.ltStyleVersion === STYLE_VERSION) return;
+  existing?.remove();
   const style = document.createElement('style');
   style.id = 'lt-styles';
+  style.dataset.ltStyleVersion = STYLE_VERSION;
   style.textContent = `
     [data-lt-done] { word-break: break-word; }
     .lt-overlay-container {
@@ -165,7 +170,7 @@ export function injectStyles(): void {
       justify-content: center;
       text-align: center;
       overflow: hidden;
-      line-height: 1.2;
+      line-height: 1.05;
       color: #111;
       background: rgba(255, 255, 255, 0.28);
       -webkit-backdrop-filter: blur(10px) saturate(1.05);

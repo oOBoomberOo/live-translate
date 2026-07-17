@@ -5,7 +5,6 @@ import { injectStyles } from './dom-utils';
 const VERTICAL_ASPECT_RATIO = 1.4;
 const MIN_FONT_HORIZONTAL = 10;
 const MIN_FONT_VERTICAL = 9;
-const MAX_FONT_HORIZONTAL = 40;
 
 export function renderOverlays(
   img: HTMLImageElement,
@@ -47,6 +46,7 @@ export function renderOverlays(
     const overlay = document.createElement('span');
     overlay.className = vertical ? 'lt-overlay lt-overlay--vertical' : 'lt-overlay';
     overlay.setAttribute('data-lt-skip', 'true');
+    overlay.dataset.ltOriginalOcr = box.text;
     if (vertical) overlay.setAttribute('data-lt-vertical', 'true');
 
     const textEl = document.createElement('span');
@@ -73,6 +73,7 @@ export function renderOverlays(
       displayWidth,
       displayHeight,
       vertical,
+      originalText: box.text,
     });
     attachOverlayResize(overlay, textEl, handles, container);
   });
@@ -128,10 +129,19 @@ function layoutFixedBoxOverlay(
     displayWidth: number;
     displayHeight: number;
     vertical: boolean;
+    originalText: string;
   },
 ): void {
-  const { ocrLeft, ocrTop, ocrWidth, ocrHeight, displayWidth, displayHeight, vertical } =
-    opts;
+  const {
+    ocrLeft,
+    ocrTop,
+    ocrWidth,
+    ocrHeight,
+    displayWidth,
+    displayHeight,
+    vertical,
+    originalText,
+  } = opts;
 
   const left = clamp(ocrLeft, 0, displayWidth);
   const top = clamp(ocrTop, 0, displayHeight);
@@ -154,27 +164,70 @@ function layoutFixedBoxOverlay(
     textEl.style.hyphens = 'auto';
   }
 
-  fitFontToBox(el, textEl, vertical, width, height);
+  fitFontToBox(el, textEl, vertical, width, height, originalText);
   applyPercentBox(el, left, top, width, height, displayWidth, displayHeight);
 }
 
 /**
- * Prefer the original OCR glyph scale. Only shrink slightly if English still
- * overflows — never collapse to tiny unreadable sizes.
+ * Target font size ≈ original OCR glyph size (from the source-text box metrics).
+ * Prefer filling the OCR box height; only shrink later if wrapped text overflows it.
  */
-function preferredFontSize(vertical: boolean, boxWidth: number, boxHeight: number): number {
+function preferredFontSize(
+  vertical: boolean,
+  boxWidth: number,
+  boxHeight: number,
+  originalText: string,
+): number {
   if (vertical) {
-    // Vertical manga glyphs roughly match column width; keep room for EN wrap.
-    return Math.max(MIN_FONT_VERTICAL, Math.round(Math.min(boxWidth * 0.72, boxHeight * 0.18)));
+    // Vertical CJK glyphs fill most of the column width.
+    return Math.max(MIN_FONT_VERTICAL, Math.round(boxWidth * 0.92));
   }
-  // Horizontal speech: line height ≈ OCR box height for single-line bubbles;
-  // for multi-line boxes use a typical line (~28–40% of block height, capped).
-  const singleLine = boxHeight <= boxWidth * 0.55;
-  const size = singleLine ? boxHeight * 0.72 : Math.min(boxHeight * 0.28, boxWidth * 0.18);
-  return Math.max(
-    MIN_FONT_HORIZONTAL,
-    Math.min(MAX_FONT_HORIZONTAL, Math.round(size)),
-  );
+
+  const lines = estimateOriginalLineCount(originalText, boxWidth, boxHeight);
+  // Match original line height closely — manga / poster glyphs sit near the box.
+  const lineHeight = boxHeight / Math.max(1, lines);
+  return Math.max(MIN_FONT_HORIZONTAL, Math.round(lineHeight * 0.95));
+}
+
+/**
+ * Infer how many visual lines the original OCR text occupied in this box.
+ */
+function estimateOriginalLineCount(
+  originalText: string,
+  boxWidth: number,
+  boxHeight: number,
+): number {
+  const explicit = originalText
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (explicit.length > 1) return explicit.length;
+
+  const text = (explicit[0] ?? originalText).replace(/\s+/g, '');
+  if (!text) return 1;
+
+  // Short wide boxes are almost always a single speech / title line.
+  if (boxHeight <= boxWidth * 0.55) return 1;
+
+  const isCjk = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/.test(text);
+  if (isCjk) {
+    // CJK glyphs are roughly square — estimate filled rows from area/char.
+    const charSize = Math.sqrt((boxWidth * boxHeight) / Math.max(1, text.length));
+    return Math.max(1, Math.min(text.length, Math.round(boxHeight / Math.max(1, charSize))));
+  }
+
+  // Latin / mixed: prefer 1 line when the text is short enough to fit as a title.
+  const approxGlyph = boxHeight * 0.9;
+  const charsPerLine = Math.max(1, Math.floor(boxWidth / Math.max(1, approxGlyph * 0.55)));
+  if (text.length <= charsPerLine * 1.15) return 1;
+  return Math.max(1, Math.ceil(text.length / charsPerLine));
+}
+
+function contentFitsBox(textEl: HTMLElement, boxHeight: number): boolean {
+  // Compare against the OCR box height we assigned, not clientHeight — absolute
+  // overlays can report clientHeight 0 during initial layout, which previously
+  // forced every overlay down to the minimum font size.
+  return textEl.scrollHeight <= boxHeight + 2;
 }
 
 function fitFontToBox(
@@ -183,27 +236,20 @@ function fitFontToBox(
   vertical: boolean,
   boxWidth = el.clientWidth,
   boxHeight = el.clientHeight,
+  originalText = el.dataset.ltOriginalOcr ?? '',
 ): void {
   const width = boxWidth || el.clientWidth || parseFloat(el.style.width) || 0;
   const height = boxHeight || el.clientHeight || parseFloat(el.style.height) || 0;
-  const preferred = preferredFontSize(vertical, width, height);
-  // Vertical columns often hold longer EN replacements — allow shrinking to the
-  // readable floor rather than stopping at ~82% of the preferred size.
+  const preferred = preferredFontSize(vertical, width, height, originalText);
   const minSize = vertical ? MIN_FONT_VERTICAL : MIN_FONT_HORIZONTAL;
 
   el.style.fontSize = `${preferred}px`;
   void el.offsetHeight;
-  const fitsPreferred =
-    el.scrollWidth <= el.clientWidth + 1 &&
-    el.scrollHeight <= el.clientHeight + 1 &&
-    textEl.scrollWidth <= textEl.clientWidth + 1 &&
-    textEl.scrollHeight <= el.clientHeight + 1;
-  if (fitsPreferred || preferred <= minSize) {
+  if (contentFitsBox(textEl, height) || preferred <= minSize) {
     return;
   }
 
-  // Fit all the way to a readable floor. A translated paragraph can be much
-  // longer than its source, and stopping near the preferred size clips it.
+  // Only shrink when wrapped text exceeds the OCR box height.
   let best = minSize;
   let lo = minSize;
   let hi = preferred;
@@ -211,12 +257,7 @@ function fitFontToBox(
     const mid = Math.floor((lo + hi) / 2);
     el.style.fontSize = `${mid}px`;
     void el.offsetHeight;
-    const fits =
-      el.scrollWidth <= el.clientWidth + 1 &&
-      el.scrollHeight <= el.clientHeight + 1 &&
-      textEl.scrollWidth <= textEl.clientWidth + 1 &&
-      textEl.scrollHeight <= el.clientHeight + 1;
-    if (fits) {
+    if (contentFitsBox(textEl, height)) {
       best = mid;
       lo = mid + 1;
     } else {
@@ -373,7 +414,14 @@ function attachOverlayResize(
     const box = overlay.getBoundingClientRect();
     const left = clamp(box.left - bounds.left, 0, bounds.width - width);
     const top = clamp(box.top - bounds.top, 0, bounds.height - height);
-    fitFontToBox(overlay, textEl, vertical, width, height);
+    fitFontToBox(
+      overlay,
+      textEl,
+      vertical,
+      width,
+      height,
+      overlay.dataset.ltOriginalOcr ?? '',
+    );
     applyPercentBox(
       overlay,
       left,
